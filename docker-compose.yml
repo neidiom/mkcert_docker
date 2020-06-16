@@ -1,0 +1,47 @@
+version: "3.7"
+
+services:
+  ff_mkcert:
+    container_name: ff_mkcert
+    hostname: ff_mkcert
+    image: ff_mkcert:latest
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.mkcert
+    volumes:
+      - ff_mkcert:/root/.local/share/mkcert:rw
+    command: >
+      /bin/sh -c 'mkcert -install;
+      mkcert -cert-file my_domain.crt -key-file my_domain.key "*.my_domain";
+      mkcert -cert-file graph.my_domain.crt -key-file graph.my_domain.key "graph.my_domain";
+      tail -f /dev/null'
+    networks:
+      - backend
+      - frontend
+  ff_caddy:
+    container_name: ff_caddy
+    hostname: ff_caddy
+    image: "abiosoft/caddy:latest"
+    volumes:
+      - ff_mkcert:/root/certs # to sync mkcert certificates to Caddy
+      - ./docker/caddy/Caddyfile:/etc/Caddyfile  # to mount custom Caddyfile
+    ports:
+      - "2015:2015"
+      #- "443:2015"
+    #entrypoint: tail -f /dev/null
+    depends_on:
+      - ff_mkcert
+    networks:
+      backend:
+        aliases:
+          - graph.my_domain
+      frontend:
+        aliases:
+          - graph.my_domain
+networks:
+  frontend:
+  backend:
+
+volumes:
+  ff_mkcert:
+    name: ff_mkcert

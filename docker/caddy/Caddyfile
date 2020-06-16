@@ -1,0 +1,9 @@
+graph.my_domain {
+    log stdout
+    tls /root/certs/graph.my_domain.crt /root/certs/graph.my_domain.key
+
+    proxy / http://graph:8080 {
+        transparent
+        header_upstream Host  "graph.my_domain"
+    }
+}
